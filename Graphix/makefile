@@ -5,7 +5,7 @@ BIN 		:= bin
 SRC			:= src
 INCLUDE 	:= include
 
-LIBRARIES	:=
+LIBRARIES	:= lib
 EXECUTABLE	:= main
 
 
@@ -15,8 +15,8 @@ run: clean all
 	clear
 	./$(BIN)/$(EXECUTABLE)
 
-$(BIN)/$(EXECUTABLE):	$(SRC)/*.cpp
-	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ -o $@ $(LIBRARIES)
+$(BIN)/$(EXECUTABLE):	$(SRC)/*.cpp $(SRC)/*.c
+	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) $^ -o $@ -L$(LIBRARIES) -lglfw3 -lopengl32 -lgdi32 -luser32 -lkernel32
 
 clean:
 	-rm $(BIN)/*

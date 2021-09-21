@@ -1,33 +1,51 @@
 #include <iostream>
-#include "Vector.h"
-#include "Operations.h"
+#include "AppWindow.h"
+#include "ShaderLoader.h"
+#include "Mesh.h"
 
-using namespace gpx;
+gpx::AppWindow* app_window = nullptr;
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    Vector a(2, 2.1, 4.4); Vector b(1, 2, 5.5);
-    std::cout << a << std::endl;
-    std::cout << b << std::endl;
+    app_window = &gpx::AppWindow::GetInstance();
+    
+    app_window->InitWindow();
 
-    std::cout << "a + b: " << a + b << std::endl;
-    std::cout << "a - b: " << a - b << std::endl;
-    std::cout << "-a: " << -a << std::endl;
-    std::cout << "2 * a: " << 2 * a << std::endl;
-    std::cout << "a * 2: " << a * 2 << std::endl;
+    gpx::ShaderLoader shader("../shaders/fractals", (__UINT32_TYPE__)app_window->GetWidth(), (__UINT32_TYPE__)app_window->GetHeight());
 
-    std::cout << std::endl;
+    gpx::Vertex vertices[] = 
+    {
+        gpx::Vertex(glm::vec3(-1, 1, 0), glm::vec2(0, 0)),
+        gpx::Vertex(glm::vec3(1, 1, 0), glm::vec2(1, 0)),
+        gpx::Vertex(glm::vec3(-1, -1, 0), glm::vec2(0, 1)),
+        gpx::Vertex(glm::vec3(1, 1, 0), glm::vec2(1, 1))
+    };
 
-    std::cout << "Dot(a,b): " << Dot(a, b) << std::endl;
-    std::cout << "Cross(a,b): " << Cross(a, b) << std::endl;
+    gpx::Mesh mesh(vertices, sizeof(vertices) / sizeof(vertices[0]));
 
-    std::cout << std::endl;
+    gpx::Camera camera(0, 0, -4, 1);
+    gpx::Mouse mouse(0, 0);
+    
+    do
+    {   
+        glClearColor(0.8f, 0.4f, 1.0f , 0.3f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        // clear the z-buffer
+        glClearDepth(1);
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-    std::cout << "Mag a: " << Magnitude(a) << std::endl;
-    std::cout << "Normalized: " << Normalize(a) << std::endl;
+        shader.Bind();
+        shader.UpdateTime(glfwGetTime() * 1000);
+        shader.UpdateCamera(camera);
+        shader.UpdateMouse(mouse);
+        mesh.Draw();
+        app_window->InputListener(&camera, &mouse);
+        app_window->Update();
+    
+    } while (app_window->GetRunningStatus() == true);
 
-    std::cout << std::endl;
+    
+    app_window->Exit();
 
-    system("pause");
     return 0;
 }
