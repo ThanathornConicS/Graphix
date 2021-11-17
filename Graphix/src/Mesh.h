@@ -35,7 +35,7 @@ namespace gpx
     class Mesh
     {
         public:
-            Mesh(Vertex* vertices, __UINT32_TYPE__ numVertice);
+            Mesh(Vertex* vertices, uint32_t numVertice);
             virtual ~Mesh();
 
             void Draw();
@@ -48,9 +48,9 @@ namespace gpx
                 NUM_BUFFERS
             };
             
-            __UINT32_TYPE__ VAO;
-            __UINT32_TYPE__ VAB[NUM_BUFFERS];
-            __UINT32_TYPE__ drawCount;
+            uint32_t VAO;
+            uint32_t VAB[NUM_BUFFERS];
+            uint32_t drawCount;
     };
 
 }

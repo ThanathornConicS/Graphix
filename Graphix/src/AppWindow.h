@@ -4,9 +4,6 @@
 #include "ShaderLoader.h"
 #include <GLFW/glfw3.h>
 
-#include "Mouse.h"
-#include "Camera.h"
-
 namespace gpx
 {
     class AppWindow
@@ -42,7 +39,7 @@ namespace gpx
 
             void InitWindow();
             void Update();
-            void InputListener(Camera* cam, Mouse* mouse);
+            void InputListener();
             void Exit();
 
             void SetWindowSize(int w, int h);
@@ -56,6 +53,7 @@ namespace gpx
 
         public:
             float mouse_posX, mouse_posY;
+            double zoom_factor = 1;
 
         protected:    
             AppWindow(const char* name);

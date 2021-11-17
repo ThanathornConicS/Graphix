@@ -6,7 +6,7 @@ SRC			:= src
 INCLUDE 	:= include
 
 LIBRARIES	:= lib
-EXECUTABLE	:= main
+EXECUTABLE	:= GraphixExecutable
 
 
 all: $(BIN)/$(EXECUTABLE)

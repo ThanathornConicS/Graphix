@@ -3,28 +3,26 @@
 
 #include <glad/glad.h>
 #include <string>
-#include "Camera.h"
-#include "Mouse.h"
 
 namespace gpx
 {
     class ShaderLoader
     {
         public:
-            ShaderLoader(const std::string& filepath, __UINT32_TYPE__ w, __UINT32_TYPE__ h);
+            ShaderLoader(const std::string& filepath, uint32_t w, uint32_t h);
             virtual ~ShaderLoader();
 
             void Bind();
             void UpdateTime(unsigned const int timeTickes);
-            void UpdateCamera(Camera cam);
-            void UpdateMouse(Mouse mouse);
+            void UpdateScroll(float zoomFactor);
+            void UpdateRotate(float rotateDelta);
 
         private:
-            __UINT32_TYPE__ m_width;
-            __UINT32_TYPE__ m_height;
+            uint32_t m_width;
+            uint32_t m_height;
 
-            __UINT32_TYPE__ m_program;
-            __UINT32_TYPE__ m_shader[2];
+            uint32_t m_program;
+            uint32_t m_shader[2];
 
     };
 }

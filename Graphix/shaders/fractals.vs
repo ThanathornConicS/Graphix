@@ -1,22 +1,14 @@
 #version 330 core
 
-attribute vec3 pos;
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoord;
 
-uniform float systemTime;
-uniform vec2 systemResolution;
-uniform lowp vec3 camera_pos;
-uniform lowp vec2 mouse_delta;
-
-varying float vSystemTime
-varying vec2 vSystemResolution;
-varying lowp vec3 vCamera_pos;
-varying lowp vec2 vMouse_delta;
+out vec3 fragCoord;
+out vec2 texCoord;
 
 void main()
-{
-    vSystemTime = systemTime;
-    vSystemResolution = systemResolution;
-    vCamera_pos = camera_pos;
-    vMouse_delta = mouse_delta;
-    gl_Position = vec4(pos, 1);
+{   
+    fragCoord = aPos;
+    texCoord = aTexCoord;
+    gl_Position = vec4(fragCoord, 1);
 }

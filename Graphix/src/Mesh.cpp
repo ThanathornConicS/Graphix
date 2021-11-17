@@ -3,7 +3,7 @@
 
 namespace gpx
 {
-    Mesh::Mesh(Vertex* vertices, __UINT32_TYPE__ numVertice)
+    Mesh::Mesh(Vertex* vertices, uint32_t numVertice)
     {
         drawCount = numVertice;
 

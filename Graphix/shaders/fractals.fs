@@ -1,10 +1,10 @@
 #version 330 core
 
 // Ray Marching
-const int MAX_STEP = 128;
+const int MAX_STEPS = 128;
 const float MIN_DIST = 0.0;
 const float MAX_DIST = 100.0;
-const float EPSILON = 0.0005;
+const float EPSILON = 0.001;
 const float FOV = 120.0;
 
 // Fractals
@@ -23,22 +23,33 @@ int curr_Step;
 
 vec2 mouseDelta;
 
-in vec4 gl_FragCoord;
+in vec3 fragCoord;
+in vec2 texCoord;
 
-varying float vSystemTime
-varying vec2 vSystemResolution;
-varying lowp vec3 vCamera_pos;
-varying lowp vec2 vMouse_delta;
+out vec4 fragColor;
 
-float SierpenskiEstimator(vec3 z, bool isLight)
+uniform float SystemTime;
+uniform vec2 SystemResolution;
+uniform lowp vec3 Camera_pos;
+uniform lowp vec2 Mouse_delta;
+
+uniform float rotateRate;
+uniform float zoom;
+
+float sdTorus(vec3 p, vec2 r) 
 {
-    if(!isLight)
-        orbitTrap = vec4(MAX_DIST);
-    
-    vec3 a1 = vec3(0.5, 0.5, -0.5);
-    vec3 a2 = vec3(-0.5, -0.5, -0.5);
-    vec3 a3 = vec3(0.5, -0.5, 0.5);
-    vec3 a4 = vec3(-0.5, 0.5, 0.5);
+	float x = length(p.xz) - r.x;
+    return length(vec2(x, p.y)) - r.y;
+}
+
+float SierpenskiEstimator(vec3 z)
+{
+    float scale = 2.0;
+ 
+    vec3 a1 = vec3(1, 1, -1);
+    vec3 a2 = vec3(-1, -1, -1);
+    vec3 a3 = vec3(1, -1, 1);
+    vec3 a4 = vec3(-1, 1, 1);
     vec3 c;
 
     int n = 0;
@@ -51,16 +62,12 @@ float SierpenskiEstimator(vec3 z, bool isLight)
 		d = length(z - a3); if (d < dist) { c = a3; dist = d; }
 		d = length(z - a4); if (d < dist) { c = a4; dist = d; }
 
-        z = 2.0 * z - c * (2.0 - 1.0);
-        float r = dot(z, z);
-
-        if(n < COLORITERATIONS)
-            min(orbitTrap, abs(vec4(z.x, z.y, z.z, r)));
+        z = scale * z - c * (scale - 1.0);
 
         n++;
     }
 
-    return length(z) * (-n * -n);
+    return length(z) * pow(scale, float(-n));
 }
 
 mat4 RotateX(float theta)
@@ -93,56 +100,49 @@ mat4 RotateZ(float theta)
         vec4(0, 0, 0, 1)
     );
 }
-
-float SceneSDF(vec3 sample, bool isLight)
+mat2 Rot(float theta) 
 {
-    vec3 fractalPoint = 
-    (
-        RotateX(-vMouse_delta.y * 0.005) * 
-        RotateY(-vMouse_delta.x * 0.005) * 
-        RotateY(0) * vec4(sample, 1.0)
-    ).xyz;
-
-    return SierpenskiEstimator(fractalPoint, isLight);
+    float s = sin(theta);
+    float c = cos(theta);
+    return mat2(c, -s, s, c);
 }
 
-float RayMarch(vec3 source, vec3 dir, bool isLight)
+float GetDist(vec3 p) 
 {
-    float totalDistance = 0.0;
-    int steps = 0;
+    float plane = p.y + 1.0;
+    //float box = sdTorus(p - vec3(0, 1, 0), vec2(1.5));
+    float box = SierpenskiEstimator(p - vec3(0, 1, 0));
+    
+    float d = min(plane, box);
+    return d;
+}
 
-    for(steps; steps < MAX_STEP; steps++)
+float RayMarch(vec3 ro, vec3 rd) 
+{
+	float dO = 0.0;
+    
+    for(int i = 0; i < MAX_STEPS; i++) 
     {
-        vec3 p = source + totalDistance * dir;
-        float distance = SceneSDF(p, isLight);
-        totalDistance += distance;
+    	vec3 p = ro + rd * dO;
+        float dS = GetDist(p);
+        dO += dS;
 
-        if(distance > MAX_DIST || distance < EPSILON)
-            break;
+        if(dO > MAX_DIST || dS < EPSILON) break;
     }
-
-    curr_Step = steps;
-    return totalDistance;
-
+    
+    return dO;
 }
 
-vec3 RayDirection(float fov, vec2 size, vec2 fragCoord)
+vec3 GetNormal(vec3 sample)
 {
-    vec2 xy = fragCoord - size / 2.0;
-    float z = size.y / tan(radians(fov) / 2.0);
-    return normalize(vec3(xy, z));
-}
-
-vec3 GetNormal(vec3 sample, bool isLight)
-{
-    float distanceToPoint = SceneSDF(sample, isLight);
-    vec2 e = vec2(0.01, 0);
+    float distanceToPoint = GetDist(sample);
+    vec2 e = vec2(0.001, 0);
 
     vec3 normal = distanceToPoint - vec3
     (
-        SceneSDF(sample - r.xyy, isLight),
-        SceneSDF(sample - r.yxy, isLight),
-        SceneSDF(sample - r.yyx, isLight)
+        GetDist(sample - e.xyy),
+        GetDist(sample - e.yxy),
+        GetDist(sample - e.yyx)
     ); 
 
     return normalize(normal);
@@ -150,38 +150,49 @@ vec3 GetNormal(vec3 sample, bool isLight)
 
 float GetLight(vec3 sample)
 {
-    vec3 lightPos = vec3(10.0, 10.0, -10.0);
+    vec3 lightPos = vec3(3, 5, 4);
     vec3 light = normalize(lightPos - sample);
-    vec3 normal = GetNormal(sample, true);
+    vec3 normal = GetNormal(sample);
 
     float diff = clamp(dot(normal, light) * diffuseStrength, 0.0, 1.0);
 
-    float distanceToLight = RayMarch(sample+ normal * EPSILON * 2.0, light, true);
-
+    float distanceToLight = RayMarch(sample + normal * EPSILON * 2.0, light);
+    /*
     if(distanceToLight < length(lightPos - sample))
         diff *= shadowDiffuse;
-
+    */
     return diff;
+}
+
+vec3 R(vec2 uv, vec3 p, vec3 l, float z) 
+{
+    vec3 f = normalize(l-p),
+        r = normalize(cross(vec3(0,1,0), f)),
+        u = cross(f,r),
+        c = p+f*z,
+        i = c + uv.x*r + uv.y*u,
+        d = normalize(i-p);
+    return d;
 }
 
 void main()
 {
-    vec3 dir = RayDirection(FOV, vSystemResolution, gl_FragCoord.xy);
+    vec3 color = vec3(0.1, 0.0, 0.1);
+    vec3 ro = vec3(0, 1, -7);
+    ro.xz *= Rot(rotateRate * 10);
 
-    vec3 eye = vCamera_pos;
-    float marchedDistance = RayMarch(eye, dir, false);
+    vec3 rd = R(-texCoord, ro, vec3(0, 1, 0), zoom);
 
-    if(marchedDistance >= MAX_DIST)
+    float d = RayMarch(ro, rd);
+
+    if(d < MAX_DIST)
     {
-        float glow = curr_Step / 3;
-        gl_FragColor = mix(vec4(0.5137, 0.1765, 0.6471, 0.575), vec4(1, 1, 1, 1), glow * 0.05);
-    }
-    else
-    {
-        vec3 p = eye + dir * marchedDistance;
-        float diffuse = GetLight(p);
+        vec3 p = ro + rd * d;
 
-        vec4 baseColor = vec4(1.0, orbitTrap.z, orbitTrap.x, 1.0) * orbitTrap.w * 0.6 + diffuse * 0.6 + 0.2;
-        gl_FragColor = mix(baseColor, vec4(0, 0, 0, 0), clamp(marchedDistance * 0.25, 0.0, 1.0));
+        float diff = GetLight(p);
+        color = (vec3(0, 255, 251) / 255) * vec3(diff);
     }
+    color = pow(color, vec3(0.4545));
+
+    fragColor = vec4(color, 1.0);
 }

@@ -1,17 +1,16 @@
 #include "AppWindow.h"
 #include <iostream>
 
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 600
+
 namespace gpx
 {
     AppWindow* AppWindow::s_instance = nullptr;
 
-    static void Cursor_Callback(GLFWwindow* window, double xpos, double ypos)
+    static void Scroll_Callback(GLFWwindow* window, double xOffset, double yOffset) 
     {
-        double xPos, yPos;
-        glfwGetCursorPos(AppWindow::GetInstance().GetWindowInstance() ,&xPos, &yPos);
-
-        AppWindow::GetInstance().mouse_posX = xPos;
-        AppWindow::GetInstance().mouse_posY = yPos;
+        AppWindow::GetInstance().zoom_factor = AppWindow::GetInstance().zoom_factor + (yOffset / 10.0f);
     }
 
     AppWindow::AppWindow(const char* name)
@@ -20,7 +19,7 @@ namespace gpx
 
     void AppWindow::InitWindow()
     {
-        SetWindowSize(600, 600);
+        SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
         SetWindowPos(800, 400);
         SetWindowName(m_name);
 
@@ -45,19 +44,20 @@ namespace gpx
         }
 
         glfwMakeContextCurrent(m_window);
-        glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GL_TRUE);
-
-        // GLAD
-        if (!gladLoadGL()) 
-        {
-            std::cout << "Failed to initialize OpenGL context" << std::endl;
-            return;
-        }
-
-        glfwMakeContextCurrent(m_window);
-        glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GL_TRUE);
+        //glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GL_TRUE);
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetWindowPos(m_window, m_xpos, m_ypos);
+
+        // GLAD 
+        if (!gladLoadGL())  
+        { 
+            std::cout << "Failed to initialize OpenGL context" << std::endl; 
+            return; 
+        } 
+
+        /*glfwMakeContextCurrent(m_window);
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetWindowPos(m_window, m_xpos, m_ypos);*/
 
         glfwSwapInterval(1);
 
@@ -75,23 +75,14 @@ namespace gpx
         glfwSwapBuffers(m_window);
     }
 
-    void AppWindow::InputListener(Camera* cam, Mouse* mouse)
+    void AppWindow::InputListener()
     {
-        if(glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        {
-            cam->OffsetUpdate(0, 0, 1);
-        }
-        else if(glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-            cam->OffsetUpdate(0, 0, -1);
-        }
-        else if(glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if(glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             isRunning = false;
         }
 
-        glfwSetCursorPosCallback(m_window, Cursor_Callback);
-        mouse->MoveMouse(mouse_posX, mouse_posY);
+        glfwSetScrollCallback(m_window, Scroll_Callback);
 
         glfwPollEvents();
     }

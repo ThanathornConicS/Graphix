@@ -5,7 +5,7 @@
 
 namespace gpx
 {
-    static void CheckError(__UINT32_TYPE__ shader, __UINT32_TYPE__ flag, bool isProgram, const char* error_message)
+    static void CheckError(uint32_t shader, uint32_t flag, bool isProgram, const char* error_message)
     {
         GLint sucess = 0;
         char error[1024] = {0};
@@ -17,16 +17,22 @@ namespace gpx
 
         if(sucess == GL_FALSE)
         {
-            if(isProgram)
+            if (isProgram)
+            {
                 glGetProgramInfoLog(shader, sizeof(error), NULL, error);
+                std::cout << error_message << " " << error << std::endl;
+            }
             else
+            {
                 glGetProgramInfoLog(shader, sizeof(error), NULL, error);
+                //std::cout << error_message << " " << error << std::endl;
+            }
         }
     }
 
-    static __UINT32_TYPE__ CreateShader(const char* text, GLenum shaderType)
+    static uint32_t CreateShader(const char* text, GLenum shaderType)
     {
-        __UINT32_TYPE__ shader = glCreateShader(shaderType);
+        uint32_t shader = glCreateShader(shaderType);
 
         if(shader == 0)
             std::cerr << "Error: Cannot Create Shader" << std::endl;
@@ -47,29 +53,24 @@ namespace gpx
 
     static std::string LoadShader(const char* filename)
     {
-        std::ifstream file(filename);
-        
-        if(file.is_open())
-        {
-            std::string output;
-            std::string line;
+        std::ifstream file;
+        file.open(filename);
 
-            while (file.good())
-            {
-                std::getline(file, line);
-                output.append(line + "\n");   
+        std::string output;
+        std::string line;
+
+        if(file.is_open()){
+            while(file.good()){
+                getline(file,line);
+                output.append(line + "\n");
             }
-
-            return output;
+        } else {
+            std::cerr << "Unable to load shader: " << filename << std::endl;
         }
-        else
-        {
-            std::cerr << "Error: Unable to load shader" << std::endl;
-            return "";
-        }
+        return output;
     }
 
-    ShaderLoader::ShaderLoader(const std::string& filepath, __UINT32_TYPE__ w, __UINT32_TYPE__ h)
+    ShaderLoader::ShaderLoader(const std::string& filepath, uint32_t w, uint32_t h)
     {
         m_width = w;
         m_height = h;
@@ -104,7 +105,7 @@ namespace gpx
     void ShaderLoader::Bind()
     {
         glUseProgram(m_program);
-        GLint resolutionUniLoc = glGetUniformLocation(m_program, "systemResolution");
+        GLint resolutionUniLoc = glGetUniformLocation(m_program, "SystemResolution");
         glUniform2f(resolutionUniLoc, m_width, m_height);
     }
 
@@ -113,14 +114,14 @@ namespace gpx
         GLint timeUniLoc = glGetUniformLocation(m_program, "SystemTime");
         glUniform1f(timeUniLoc, timeTickes);
     }
-    void ShaderLoader::UpdateCamera(Camera cam)
+    void ShaderLoader::UpdateScroll(float zoomFactor)
     {
-        GLint camPosUniLoc = glGetUniformLocation(m_program, "camera_pos");
-        glUniform3f(camPosUniLoc, cam.GetX(), cam.GetY(), cam.GetZ());
+        GLint zoomUniLoc = glGetUniformLocation(m_program, "zoom");
+        glUniform1f(zoomUniLoc, zoomFactor);
     }
-    void ShaderLoader::UpdateMouse(Mouse mouse)
+    void ShaderLoader::UpdateRotate(float rotateDelta) 
     {
-        GLint mouseDeltaUniLoc = glGetUniformLocation(m_program, "mouse_delta");
-        glUniform2f(mouseDeltaUniLoc, mouse.GetAngleX(), mouse.GetAngleY());
+        GLint rotateUniLoc = glGetUniformLocation(m_program, "rotateRate");
+        glUniform1f(rotateUniLoc, rotateDelta);
     }
 }
