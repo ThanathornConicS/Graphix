@@ -53,7 +53,7 @@ namespace gpx
 
         public:
             float mouse_posX, mouse_posY;
-            double zoom_factor = 1;
+            double zoom_factor = 2;
 
         protected:    
             AppWindow(const char* name);

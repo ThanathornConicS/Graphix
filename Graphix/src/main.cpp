@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     {   
         glClearColor(0.6f, 0.1f, 0.6f , 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        // clear the z-buffer
+        // clear the z-buffer 
         glClearDepth(1);
         glClear(GL_DEPTH_BUFFER_BIT);
 
